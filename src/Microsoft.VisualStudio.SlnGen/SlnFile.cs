@@ -142,6 +142,8 @@ namespace Microsoft.VisualStudio.SlnGen
 
             IReadOnlyCollection<string> solutionItems = SlnProject.GetSolutionItems(firstProject, logger).ToList();
 
+            // TODO: MATTKOT: Start here with new method to collect options
+
             string solutionFileFullPath = arguments.SolutionFileFullPath?.LastOrDefault();
 
             if (solutionFileFullPath.IsNullOrWhiteSpace())
@@ -153,7 +155,10 @@ namespace Microsoft.VisualStudio.SlnGen
                     solutionDirectoryFullPath = firstProject.DirectoryPath;
                 }
 
-                string solutionFileName = Path.ChangeExtension(Path.GetFileName(firstProject.FullPath), "sln");
+                // GetPropertyValueOrDefault
+                var mattkotProjName = firstProject.Properties.Where(p => p.Name == MSBuildPropertyNames.SlnGenProjectName).SingleOrDefault()?.EvaluatedValue;
+                var mattkotFileName = mattkotProjName ?? Path.GetFileName(firstProject.FullPath);
+                string solutionFileName = Path.ChangeExtension(mattkotFileName, "sln");
 
                 solutionFileFullPath = Path.Combine(solutionDirectoryFullPath!, solutionFileName);
             }
@@ -209,9 +214,13 @@ namespace Microsoft.VisualStudio.SlnGen
 
             solution.AddSolutionItems(solutionItems);
 
+            // mattkot
+            var enableFoldersInMainProject = firstProject.GetPropertyValueOrDefault(MSBuildPropertyNames.SlnGenFolders, "false"); // .Properties.Where(p => p.Name == MSBuildPropertyNames.SlnGenFolders).SingleOrDefault()?.EvaluatedValue;
+            var enableFolders = arguments.EnableFolders2() ?? bool.Parse(enableFoldersInMainProject); // TODO: do tryParse to handle bad values
+
             if (!logger.HasLoggedErrors)
             {
-                solution.Save(solutionFileFullPath, arguments.EnableFolders(), arguments.EnableCollapseFolders(), arguments.EnableAlwaysBuild());
+                solution.Save(solutionFileFullPath, enableFolders, arguments.EnableCollapseFolders(), arguments.EnableAlwaysBuild());
             }
 
             return (solutionFileFullPath, customProjectTypeGuids.Count, solutionItems.Count, solution.SolutionGuid);

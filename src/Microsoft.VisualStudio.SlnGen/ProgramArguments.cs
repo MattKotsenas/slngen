@@ -328,6 +328,16 @@ Examples:
         /// <returns>true if folders should be used, otherwise false.</returns>
         public bool EnableFolders() => GetBoolean(Folders);
 
+        public bool? EnableFolders2()
+        {
+            if (TryGetBoolean(Folders, out var result))
+            {
+                return result;
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Gets the Configuration values based on what was specified as command-line arguments.
         /// </summary>
@@ -516,6 +526,18 @@ Examples:
             }
 
             return defaultValue;
+        }
+
+        private bool TryGetBoolean(string[] values, out bool result)
+        {
+            if (values == null || values.Length == 0)
+            {
+                result = false;
+
+                return false;
+            }
+
+            return bool.TryParse(values.Last(), out result);
         }
     }
 }
